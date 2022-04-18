@@ -24,6 +24,5 @@ A voting application that leverages Express.js API and MySQL. Front
 
 **Installation:**
 
-asdasd
 ---
 
