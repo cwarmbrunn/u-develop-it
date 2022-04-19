@@ -1,5 +1,7 @@
 const express = require("express");
 
+const inputCheck = require("./utils/inputCheck");
+
 // Require the mysql2 package that was installed
 const mysql = require("mysql2");
 
@@ -26,37 +28,87 @@ const db = mysql.createConnection(
   console.log("Connected to the election database ✅")
 );
 
+// GET ALL Candidates
+app.get("/api/candidates", (req, res) => {
+  const sql = `SELECT * FROM candidates`;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ message: "Success!", data: rows });
+  });
+});
+
 // GET a single (1) candidate
-// db.query(`SELECT * FROM candidates WHERE id = 1`, (err, row) => {
-//   if (err) {
-//     console.log(err);
-//   }
-//   console.log(row);
-// });
-// Create a candidate
-// const sql = `INSERT INTO candidates (id, first_name, last_name, industry_connected)
-// VALUES (?,?,?,?)`;
+app.get("/api/candidate/:id", (req, res) => {
+  const sql = `SELECT * FROM candidates WHERE id = ?`;
+  const params = [req.params.id];
 
-// const params = [1, "Ronald", "Firbank", 1];
+  db.query(sql, params, (err, row) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.json({
+      message: "Success!🎆",
+      data: row,
+    });
+  });
+});
 
-// db.query(sql, params, (err, result) => {
-//   if (err) {
-//     console.log(err);
-//   }
-//   console.log(result);
-// });
 // Delete a Candidate
-// db.query(`DELETE FROM candidates WHERE id = ?`, 1, (err, result) => {
-//   if (err) {
-//     console.log(err);
-//   }
-//   console.log(result);
-// });
-// db.query(`SELECT * FROM candidates`, (err, rows) => {
-//   console.log(rows);
-// });
-// THIS MUST BE LAST OR IT WILL OVERRIDE OTHER METHODS
-// Default response for any other request (Not Found)
+app.delete("/api/candidate/:id", (req, res) => {
+  // Set up SQL command - we want to delete candidates with the input id
+  const sql = `DELETE FROM candidates WHERE id = ?`;
+  // Set up parameters
+  const params = [req.params.id];
+
+  // Dataabse Query Set Up
+  db.query(sql, params, (err, result) => {
+    // IF ERROR
+    if (err) {
+      // Send a Status Message of 400
+      res.statusMessage(400).json({ error: res.message });
+    } else if (!result.affectedRows) {
+      res.json({ message: "Candidate not found!" });
+    } else {
+      res.json({
+        message: "Deleted",
+        changes: result.affectedRows,
+        id: req.params.id,
+      });
+    }
+  });
+});
+
+// Create a Candidate
+// POST request that uses object destructuring to pull the body property out of the request object
+app.post("/api/candidate", ({ body }, res) => {
+  const errors = inputCheck(
+    body,
+    "first_name",
+    "last_name",
+    "industry_connected"
+  );
+  if (errors) {
+    res.status(400).json({ error: errors });
+    return;
+  }
+  const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
+  VALUES (?,?,?)`;
+  const params = [body.first_name, body.last_name, body.industry_connected];
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.json({ message: "Success!", data: body });
+  });
+});
+
 app.use((req, res) => {
   res.status(404).end();
 });
