@@ -1,5 +1,7 @@
 const express = require("express");
 
+// Set up env
+require("dotenv").config();
 const inputCheck = require("./utils/inputCheck");
 
 // Require the mysql2 package that was installed
@@ -22,7 +24,7 @@ const db = mysql.createConnection(
     user: "root",
 
     // SQL Password Goes Here
-    password: "pFj4VA#$rkQ6V4XZ",
+    password: process.env.DB_PW,
     database: "election",
   },
   console.log("Connected to the election database ✅")
